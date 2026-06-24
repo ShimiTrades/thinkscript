@@ -1,0 +1,11 @@
+# Shimi EMA slope colored
+
+input price = close;
+input length = 20;
+input displace = 0;
+
+def EMAline = ExpAverage(price[-displace], length);
+
+# Color based on slope
+plot EMA_MA = EMAline;
+EMA_MA.AssignValueColor(if EMA_MA > EMA_MA[1] then Color.BLUE else Color.ORANGE);
