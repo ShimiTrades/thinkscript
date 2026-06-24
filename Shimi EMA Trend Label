@@ -1,0 +1,11 @@
+# Shimi EMA trend label.  EMA Trend Label, 20/50/200 ema simple trend filter.
+
+
+def ema20 = ExpAverage (close, length = 20);
+def ema50 = ExpAverage (close, length = 50);
+def ema200 = ExpAverage(close, length = 200);
+
+def bull = ema20 > ema50 and ema50 > ema200;
+def bear = ema20 < ema50 and ema50 < ema200;
+
+AddLabel (yes, if bull then "Uptrend" else if bear then "Downtrend" else "Neutral", if bull then color.green else if bear then color.red else color.lighT_GRAY);
