@@ -1,0 +1,25 @@
+# Shimi's Scalp Line (places horizontal line where desired stop loss amount would be).
+
+input showLabels = yes;
+input offset = 25;
+
+def current_bar = !IsNaN(close) and IsNaN(close[-1]);
+def nan = Double.NaN;
+def agg = GetValue(GetAggregationPeriod(), 0);
+def uinit = close - offset;
+def dinit = close + offset;
+
+plot maxtop = if current_bar then uinit else nan;
+maxtop.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+maxtop.SetDefaultColor(Color.WHITE);
+maxtop.HideBubble();
+
+plot minbottom = if current_bar then dinit else nan;
+minbottom.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+minbottom.SetDefaultColor(Color.WHITE);
+minbottom.HideBubble();
+
+AddChartBubble(showLabels and IsNaN(close[-1]), text = "  newbar@: " + maxtop, "price location" = maxtop * 1.0015, color = Color.WHITE, yes);
+AddChartBubble(showLabels and IsNaN(close[-1]), text = "  newbar@: : " + minbottom, "price location" = minbottom * 0.9985, color = Color.WHITE, no);
+
+###
