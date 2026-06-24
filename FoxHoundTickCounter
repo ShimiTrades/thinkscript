@@ -1,0 +1,21 @@
+# BigBoss (Foxhound) tick counter
+
+input offset=3;
+input mode = {"Count Up", default "Count Down"};
+input price = open;
+
+DefineGlobalColor("Bubble Color",Color.White);
+
+def ticks;
+if mode == mode."Count Down" {
+    ticks = getAggregationPeriod()-tick_count();
+}
+else
+{
+    ticks = tick_Count();
+}
+
+def x_loc = isNaN(close[offset-1]) and !isNan(close[Offset]);
+def y_loc = price[offset];
+
+addchartbubble(x_loc,y_loc,ticks[offset],GlobalColor("Bubble Color"));
