@@ -1,0 +1,142 @@
+# Shimi Swingarms with Risk.  Invented by someone else, but modified for preference by Shimi.
+
+input trailType = {default modified, unmodified};
+input ATRPeriod = 28;
+input ATRFactor = 5;
+input firstTrade = {default long, short};
+input averageType = AverageType.WILDERS;
+
+input fib1Level = 61.8;
+input fib2Level = 78.6;
+input fib3Level = 88.6;
+
+Assert(ATRFactor > 0, "'atr factor' must be positive: " + ATRFactor);
+
+def HiLo = Min(high - low, 1.5 * Average(high - low, ATRPeriod));
+def HRef = if low <= high[1]
+    then high - close[1]
+    else (high - close[1]) - 0.5 * (low - high[1]);
+def LRef = if high >= low[1]
+    then close[1] - low
+    else (close[1] - low) - 0.5 * (low[1] - high);
+
+def trueRange;
+switch (trailType) {
+case modified:
+    trueRange = Max(HiLo, Max(HRef, LRef));
+case unmodified:
+    trueRange = TrueRange(high, close, low);
+}
+def loss = ATRFactor * MovingAverage(averageType, trueRange, ATRPeriod);
+
+def state = {default init, long, short};
+def trail;
+switch (state[1]) {
+case init:
+    if (!IsNaN(loss)) {
+        switch (firstTrade) {
+        case long:
+            state = state.long;
+            trail = close - loss;
+        case short:
+            state = state.short;
+            trail = close + loss;
+    }
+    } else {
+        state = state.init;
+        trail = Double.NaN;
+    }
+case long:
+    if (close > trail[1]) {
+        state = state.long;
+        trail = Max(trail[1], close - loss);
+    } else {
+        state = state.short;
+        trail = close + loss;
+    }
+case short:
+    if (close < trail[1]) {
+        state = state.short;
+        trail = Min(trail[1], close + loss);
+    } else {
+        state = state.long;
+        trail = close - loss;
+    }
+}
+
+def BuySignal = Crosses(state == state.long, 0, CrossingDirection.ABOVE);
+def SellSignal = Crosses(state == state.short, 0, CrossingDirection.ABOVE);
+
+def ex = if BuySignal then high else if SellSignal then low else if state == state.long then Max(ex[1], high) else if state == state.short then Min(ex[1], low) else ex[1];
+
+plot TrailingStop = trail;
+
+TrailingStop.SetPaintingStrategy(PaintingStrategy.POINTS);
+TrailingStop.DefineColor("Long", Color.GREEN);
+TrailingStop.DefineColor("Short", Color.RED);
+TrailingStop.AssignValueColor(if state == state.long
+    then TrailingStop.Color("Long")
+    else TrailingStop.Color("Short"));
+
+plot Extremum = ex;
+Extremum.SetPaintingStrategy(PaintingStrategy.POINTS);
+Extremum.DefineColor("HH", Color.GREEN);
+Extremum.DefineColor("LL", Color.RED);
+Extremum.AssignValueColor(if state == state.long
+    then Extremum.Color("HH")
+    else Extremum.Color("LL"));
+Extremum.Hide();
+
+def f1 = ex + (trail - ex) * fib1Level / 100;
+def f2 = ex + (trail - ex) * fib2Level / 100;
+def f3 = ex + (trail - ex) * fib3Level / 100;
+def l100 = trail + 0;
+
+plot Fib1 = f1;
+Fib1.SetPaintingStrategy(PaintingStrategy.POINTS);
+Fib1.SetDefaultColor(Color.BLACK);
+Fib1.Hide();
+
+plot Fib2 = f2;
+Fib2.SetPaintingStrategy(PaintingStrategy.POINTS);
+Fib2.SetDefaultColor(Color.BLACK);
+Fib2.Hide();
+
+plot Fib3 = f3;
+Fib3.SetPaintingStrategy(PaintingStrategy.POINTS);
+Fib3.SetDefaultColor(Color.BLACK);
+Fib3.Hide();
+
+def atr = Average(TrueRange(high, close, low), 14);
+
+# Existing Inputs & Calculations remain unchanged
+
+# Distance Calculations
+def lastClose = close[1];
+def currentPrice = close;
+def trailValue = TrailingStop;
+
+def lastCloseDistance = AbsValue(lastClose - trailValue);
+def currentPriceDistance = AbsValue(currentPrice - trailValue);
+
+# Label displaying distances
+#AddLabel(yes, 
+#    "LC: " + AsText(lastCloseDistance, NumberFormat.TWO_DECIMAL_PLACES) + " | " +
+#    "P: " + AsText(currentPriceDistance, NumberFormat.TWO_DECIMAL_PLACES), 
+#    Color.YELLOW);
+
+input offsetx=3;
+input offsety=3;
+
+def x_loc = IsNaN(trailingstop[offsetx - 1]) and !IsNaN(trailingstop[Offsetx]);
+def y_loc = trailingstop[offsety];
+
+
+# Bubble at the Trailing Stop
+AddChartBubble(
+    x_loc, y_loc,
+    AsPrice(Round(lastCloseDistance [offsetx], 0)) + " | " + 
+    AsPrice(Round(currentPriceDistance[offsetx], 0)), 
+    Color.YELLOW, 
+    yes
+);
