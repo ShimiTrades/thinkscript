@@ -1,0 +1,14 @@
+# Shimi ATRLabel - Mixed Static/Live Version
+#
+# ATRValue is static (based on the last closed bar).
+# ATRLastBar tracks the live range of the current active bar.
+
+input ATRLength = 40;
+
+# Static ATR: calculated from the last completed bar
+def ATRValue = Average(TrueRange(high, close, low)[1], ATRLength);
+
+# Live Range: highest high minus lowest low of the current active bar
+def ATRLastBar = high - low;
+
+AddLabel(yes, " ATR = " + Round(ATRValue, 2) + ", R. = " + Round(ATRLastBar, 2) , CreateColor(153, 153, 0));
